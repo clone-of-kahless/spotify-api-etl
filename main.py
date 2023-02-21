@@ -7,6 +7,11 @@ from datetime import datetime
 import datetime
 import sqlite3
 
+# ORM - Object Relational Mappers:
+    # To retrieve data from the SQL database, you need to write some SQL obviously.
+    # Python ORM allows you to query your data directly from Python without using SQL
+    # ex. SQLAlchemy
+
 #tutorial: https://github.com/karolina-sowinska/free-data-engineering-course-for-beginners/
 
 DATABASE_LOCATION = "sqlite:///recently_played.sqlite"
@@ -90,5 +95,40 @@ if __name__ == "__main__":
 
     #print(track_df) # looks ok (:
 
+    # VALIDATE/TRANSFORM:
     if data_validation(track_df):
         print("Data validation checks passed. Proceed to load.")
+
+    # LOAD:
+
+    # create engine & pass in database location
+        # database will be created if no db found @ DATABASE_LOCATION
+    engine = sqlalchemy.create_engine(DATABASE_LOCATION)
+
+    # connect to the database & create our cursor so we can point to specific rows in the db
+    conn = sqlite3.connect('recently_played.sqlite')
+    cursor = conn.cursor()
+
+    # example of using SQL directly instead of ORM
+        # tutorial uses default types of CHAR rather than datetime
+    sql_table_creation_query = """
+    CREATE TABLE IF NOT EXISTS my_played_tracks(
+        track_name VARCHAR(200),
+        artist_name VARCHAR(200),
+        played_at VARCHAR(200),
+        timestamp VARCHAR(200),
+        CONSTRAINT primary_key_constraint PRIMARY KEY (played_at)
+    )
+    """
+
+    cursor.execute(sql_table_creation_query)
+    print("Opened database successfully.")
+
+    try:
+        track_df.to_sql("my_played_tracks", engine, index = False, if_exists = "append")
+    except:
+        print("Data already exists in the database.")
+
+    # close cursor:
+    conn.close()
+    print("Database closed.")
