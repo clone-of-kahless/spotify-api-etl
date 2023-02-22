@@ -1,2 +1,3 @@
-
 *.sqlite
+/spotify-venv
+airflow_windows.txt

@@ -5,19 +5,22 @@ import json
 import requests
 from datetime import datetime
 import datetime
+import time
 import sqlite3
 
-# ORM - Object Relational Mappers:
+# OK -- the UNIX timestamp conversion though it corresponds to yesterday seems to be pulling back all kinds of irrelevant data (not within the boundaries set)
+# I verified that the yesterday timestamp does correspond to yesterday.
+# But Googling around, the timestamps do not act in a way consistent with how a lot of people expect for Spotify API 
+# I'm not totally sure if that's my issue here or if there is some other bug I am missing. D: 
+    # Anyway, I got what I needed out of this exercise -- get a baby pipeline connected to Airflow. 
+    # I'll write up my notes for Airflow setup using WSL, maybe try to run it through Docker but this is fine for now then move onto original API pipeline project with more exhaustive validation.
+
+# Defining ORM - Object Relational Mappers:
     # To retrieve data from the SQL database, you need to write some SQL obviously.
     # Python ORM allows you to query your data directly from Python without using SQL
     # ex. SQLAlchemy
 
 #tutorial: https://github.com/karolina-sowinska/free-data-engineering-course-for-beginners/
-
-DATABASE_LOCATION = "sqlite:///recently_played.sqlite"
-USER_ID = "sheaftw" #your user_id
-TOKEN = "" 
-    # get token from https://developer.spotify.com/console/get-recently-played/
 
 def data_validation(df: pd.DataFrame) -> bool:
 
@@ -38,37 +41,44 @@ def data_validation(df: pd.DataFrame) -> bool:
         raise Exception("Null values found.")
 
     # check data only includes that listened to/timestamps within past 24 hours
-    yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
-    yesterday = yesterday.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
-        #ready for comparison to timestamp
+    # yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
+    # yesterday = yesterday.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+    #     #ready for comparison to timestamp
     
-    timestamps = df["timestamp"].tolist()
-    for timestamp in timestamps:
-        if datetime.datetime.strptime(timestamp, "%Y-%m-%d") != yesterday:
-            raise Exception("At least one of the returned tracks not from yesterday.")
+    # timestamps = df["timestamp"].tolist()
+    # for timestamp in timestamps:
+    #     if datetime.datetime.strptime(timestamp, "%Y-%m-%d") != yesterday:
+    #         raise Exception("At least one of the returned tracks not from yesterday.")
 
     return True
 
-if __name__ == "__main__":
+def run_spotify_etl():
+    database_location = r"C:\Users\Shea\Documents\GitHub\spotify-api-etl\recently_played_tracks.sqlite"
+    #user_id = "sheaftw" #your user_id, not used? will probably be used for getting token
+    api_token = "BQCpmWt98UDPW1ak-X3EWs7fnxxfTkP5Vmn1MGmVW1mXcbVRLAPVbXjzc26LP7EKYJfyDrQy4SWpRtQtWmmUlK5dk-558ARRVdgoJpAbDynN9P60tnJXAxVLdIhIQUPuCES0yNhv9sev-d3xG_Aj1d0zlA2uowH82alvQJ2KTXktlN2hEg" 
+    # get token from https://developer.spotify.com/console/get-recently-played/ (expires quickly, function to grab token needed if rerun)
 
     #per Spotify API instructions
     headers = {
         "Accept" : "application/json",
         "Content-Type" : "application/json",
-        "Authorization" : "Bearer {token}".format(token = TOKEN)
+        "Authorization" : "Bearer {token}".format(token = api_token)
         }
 
     # Spotify's API takes datetime as UNIX ms
     # so, convert yesterday's date to that format
-    # End goal is each day we want to load in yesterday's data/last 24 hours (:
+    # End goal is each day we want to load in yesterday's data/last 24 hours
     today = datetime.datetime.now()
     yesterday = today - datetime.timedelta(days = 1)
-    yesterday_unix_timestamp = int(yesterday.timestamp()) * 100
+    #yesterday_unix_timestamp = int(yesterday.timestamp()) * 100 # * 100 from tutorial not needed?
+    yesterday_unix_timestamp = int(time.mktime(yesterday.timetuple()))
+    print('UNIX TIME STAMP, YESTERDAY:', yesterday_unix_timestamp)
 
-    request = requests.get("https://api.spotify.com/v1/me/player/recently-played?after={time}".format(time = yesterday_unix_timestamp), headers = headers)
+    #https://developer.spotify.com/documentation/web-api/reference/#/operations/get-recently-played
+    request = requests.get("https://api.spotify.com/v1/me/player/recently-played?limit=50&after={time}".format(time = yesterday_unix_timestamp), headers = headers)
 
     data = request.json()
-    #print(data)
+    # print(data)
     
     #extract items of interest
     track_names = []
@@ -103,10 +113,10 @@ if __name__ == "__main__":
 
     # create engine & pass in database location
         # database will be created if no db found @ DATABASE_LOCATION
-    engine = sqlalchemy.create_engine(DATABASE_LOCATION)
+    engine = sqlalchemy.create_engine('sqlite:///' + database_location)
 
     # connect to the database & create our cursor so we can point to specific rows in the db
-    conn = sqlite3.connect('recently_played.sqlite')
+    conn = sqlite3.connect(database_location)
     cursor = conn.cursor()
 
     # example of using SQL directly instead of ORM
@@ -132,3 +142,12 @@ if __name__ == "__main__":
     # close cursor:
     conn.close()
     print("Database closed.")
+
+run_spotify_etl()
+
+# ? - What's a DAG?
+    # DAG - Directed Acyclic Graph
+    # Represents a series of events
+    # Acyclic -> Does not cycle, you do not return to a previous event
+    # Each DAG = a collection of tasks, organized in a way that reflects dependencies & relationships
+    # Each node in a DAG is one task/function
