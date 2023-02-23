@@ -53,9 +53,12 @@ def data_validation(df: pd.DataFrame) -> bool:
     return True
 
 def run_spotify_etl():
-    database_location = r"C:\Users\Shea\Documents\GitHub\spotify-api-etl\recently_played_tracks.sqlite"
+    #Run within Windows:
+    #database_location = r"C:\path\to\spotify-api-etl\recently_played_tracks.sqlite"
+    #WSL/Airflow path:
+    database_location = "/mnt/c/path/to/spotify-api-etl/recently_played_tracks.sqlite"
     #user_id = "sheaftw" #your user_id, not used? will probably be used for getting token
-    api_token = "BQCpmWt98UDPW1ak-X3EWs7fnxxfTkP5Vmn1MGmVW1mXcbVRLAPVbXjzc26LP7EKYJfyDrQy4SWpRtQtWmmUlK5dk-558ARRVdgoJpAbDynN9P60tnJXAxVLdIhIQUPuCES0yNhv9sev-d3xG_Aj1d0zlA2uowH82alvQJ2KTXktlN2hEg" 
+    api_token = "" 
     # get token from https://developer.spotify.com/console/get-recently-played/ (expires quickly, function to grab token needed if rerun)
 
     #per Spotify API instructions
@@ -72,7 +75,7 @@ def run_spotify_etl():
     yesterday = today - datetime.timedelta(days = 1)
     #yesterday_unix_timestamp = int(yesterday.timestamp()) * 100 # * 100 from tutorial not needed?
     yesterday_unix_timestamp = int(time.mktime(yesterday.timetuple()))
-    print('UNIX TIME STAMP, YESTERDAY:', yesterday_unix_timestamp)
+    #print('UNIX TIME STAMP, YESTERDAY:', yesterday_unix_timestamp)
 
     #https://developer.spotify.com/documentation/web-api/reference/#/operations/get-recently-played
     request = requests.get("https://api.spotify.com/v1/me/player/recently-played?limit=50&after={time}".format(time = yesterday_unix_timestamp), headers = headers)
@@ -143,7 +146,7 @@ def run_spotify_etl():
     conn.close()
     print("Database closed.")
 
-run_spotify_etl()
+#run_spotify_etl()
 
 # ? - What's a DAG?
     # DAG - Directed Acyclic Graph
