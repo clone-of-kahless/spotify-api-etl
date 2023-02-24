@@ -133,6 +133,5 @@ OK - That should be enough notes for you, future Shea. (I hope!)
 Thanks to these resources from my Googling frenzy (and others, I'm sure, now lost to time):
 * https://airflow.apache.org/docs/apache-airflow/stable/start.html
 * https://learn.microsoft.com/en-us/windows/wsl/install
-* https://stackoverflow.com/questions/32378494/how-to-run-airflow-on-windows in which the top response summarizes the next URL
+* https://stackoverflow.com/questions/32378494/how-to-run-airflow-on-windows in which the top response summarizes the next URL. It  also references a link to the same blog with an article detailing installing Airflow via Docker. Shout out to John Humphreys!
 * https://coding-stream-of-consciousness.com/2018/11/06/apache-airflow-windows-10-install-ubuntu/
-(This last one also references a link to the same blog installing Airflow via Docker. Shout out to John Humphreys!)
